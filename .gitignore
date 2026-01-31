@@ -1,0 +1,17 @@
+# Prerequisites
+build/
+bin/
+planning/
+# Compiled Object files
+*.o
+*.a
+*.so
+
+# Your specific executables
+pipe
+scan
+socket_app
+
+# System files
+.DS_Store
+Thumbs.db
