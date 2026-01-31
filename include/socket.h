@@ -93,14 +93,6 @@ class SOCKET {
     bool WriteBuffer(bit64 _offset, const char* buffer,size_t size);
     bool ReadBuffer(bit64 _offset, char* buffer, size_t size);
     bool AttachPipe(std::string PipeName);
-    bool ConnectToSocket(SOCKET* socket,std::string Header = "Connecting",bool Force = 0);
-    bool DissconnectFromSocket();
-    bool Listen();
-    std::string SendMessage(std::string message);
-    std::string ReceiveMessage();
-    bool ResponseMessage(std::string response);
-    bool ClearPocket();
-    bool ClearBuffer();
     SOCKET* FindSocket(bit64 _ID = 0,const std::string name = "");
     uint8_t GetOffset(std::string Target);
 
