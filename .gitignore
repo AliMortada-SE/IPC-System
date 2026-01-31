@@ -7,7 +7,7 @@ else/
 *.o
 *.a
 *.so
-
+*.pipe
 # Your specific executables
 pipe
 scan
