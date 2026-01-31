@@ -1,3 +1,0 @@
-/home/ali/cpp/pipe/build/CMakeFiles/pipe.dir
-/home/ali/cpp/pipe/build/CMakeFiles/edit_cache.dir
-/home/ali/cpp/pipe/build/CMakeFiles/rebuild_cache.dir
