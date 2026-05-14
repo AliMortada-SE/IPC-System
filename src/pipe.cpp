@@ -251,3 +251,7 @@ SOCKET* PIPE::FindSocket(bit64 _ID, const std::string name) {
     PIPE_TAG std::cout << "Failed to find Socket.\n";
     return nullptr;
 }
+void PIPE::close(){
+    munmap(map, mb * 4);
+    ::close(fd);
+}

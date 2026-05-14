@@ -18,12 +18,6 @@ uint8_t SOCKET::GetOffset(std::string Target){
     }
     return 255;
 }
-void SOCKET::TakeStream(){
-    streamMutex.lock();
-}
-void SOCKET::ReleaseStream(){
-    streamMutex.unlock();
-}
 bool SOCKET::WriteByte(bit64 _offset, uint8_t byte){
     map[_offset] = byte;
     return 1;
@@ -47,7 +41,7 @@ bool SOCKET::AttachPipe(std::string PipeName){
         return 0;
     }
     std::string path = PipeName + ".pipe";
-    this->fd = open(path.c_str(), O_RDWR, 0666);
+    this->fd = ::open(path.c_str(), O_RDWR, 0666);
     // delete all above and add below until byte
     if(this->fd == -1){
         std::cout<<"Error Connecting to ("<<PipeName<<") Pipe!\n";
@@ -103,4 +97,8 @@ SOCKET* SOCKET::FindSocket(bit64 _ID ,const std::string name) {
     }
     SOCKET_TAG std::cout<<"Failed to find Socket.\n";
     return nullptr;
+}
+void SOCKET::close(){
+    munmap(map, mb * 4);
+    ::close(fd);
 }

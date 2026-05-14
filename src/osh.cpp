@@ -7,7 +7,7 @@ SOCKET::SOCKET() : osh(this) {}
 bool SOCKET::OSH::Listen(){
     uint8_t byte = NONE;
     uint8_t flag = NONE;
-    if(!parent->binary.is_open()){
+    if(parent->fd == -1 || parent->map == MAP_FAILED){
          std::cout<<"["<<parent->name<<"] Error Socket Listening, File Not in Hand.\n";
         return 0;
     }
@@ -50,7 +50,7 @@ std::string SOCKET::OSH::ReadHeader(){
     char buffer[25] = {0};
     std::string header;
     std::cout<<"["<<parent->name<<"] Reading Header (OSH).\n";
-    if(!parent->binary.is_open()){
+    if(parent->fd == -1 || parent->map == MAP_FAILED){
          std::cout<<"["<<parent->name<<"] Error Socket Listening, File Not in Hand.\n";
         return 0;
     }
@@ -70,7 +70,7 @@ std::string SOCKET::OSH::ReadData(){
     char buffer[960] = {0};
     std::string data;
      std::cout<<"["<<parent->name<<"] Reading Pocket (OSH).\n";
-    if(!parent->binary.is_open()){
+    if(parent->fd == -1 || parent->map == MAP_FAILED){
          std::cout<<"["<<parent->name<<"] Error Socket Listening, File Not in Hand.\n";
         return 0;
     }
@@ -87,7 +87,7 @@ std::string SOCKET::OSH::ReadData(){
     return data;
 }
 bool SOCKET::OSH::Connect(SOCKET* socket){
-    if(!parent->binary.is_open()){
+    if(parent->fd == -1 || parent->map == MAP_FAILED){
          std::cout<<"["<<parent->name<<"] Connection Failed, File Not in Hand.\n";
         return 0;
     }
@@ -115,7 +115,7 @@ bool SOCKET::OSH::Send(const std::string& header,const std::string& data){
         std::cout<<"["<<parent->name<<"] Maximum Header Size is ["<<MAX_POCKET_SIZE<<"]. (OSH)\n";
         return 0;
     }
-    if(!parent->binary.is_open()){
+    if(parent->fd == -1 || parent->map == MAP_FAILED){
          std::cout<<"["<<parent->name<<"] Connection Failed, File Not in Hand. (OSH)\n";
         return 0;
     }
@@ -135,7 +135,7 @@ bool SOCKET::OSH::Send(const std::string& header,const std::string& data){
     return 1;
 }
 bool SOCKET::OSH::Keep(){
-    if(!parent->binary.is_open()){
+    if(parent->fd == -1 || parent->map == MAP_FAILED){
          std::cout<<"["<<parent->name<<"] Connection Failed, File Not in Hand.\n";
         return 0;
     }
@@ -148,7 +148,7 @@ bool SOCKET::OSH::Keep(){
     return 1;
 }
 bool SOCKET::OSH::Disconnect(){
-    if(!parent->binary.is_open()){
+    if(parent->fd == -1 || parent->map == MAP_FAILED){
          std::cout<<"["<<parent->name<<"] Connection Failed, File Not in Hand.\n";
         return 0;
     }

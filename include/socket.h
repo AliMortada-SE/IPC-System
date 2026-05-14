@@ -96,7 +96,7 @@ class SOCKET {
     bool AttachPipe(std::string PipeName);
     SOCKET* FindSocket(bit64 _ID = 0,const std::string name = "");
     uint8_t GetOffset(std::string Target);
-
+    void close();
     int fd = -1;
     char* map = nullptr;
     SOCKET* PeerSocket = nullptr;

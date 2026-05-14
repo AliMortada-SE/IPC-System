@@ -50,6 +50,7 @@ class PIPE{
         SOCKET* Socket(const std::string name);
         SOCKET* FindSocket(bit64 _ID = 0,const std::string name = "");
         bool RemoveSocket(SOCKET* socket);
+        void close();
         std::vector<std::unique_ptr<SOCKET>> sockets;
         private:
         bit64 filesize;

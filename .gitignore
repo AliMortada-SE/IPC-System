@@ -8,7 +8,7 @@ else/
 *.a
 *.so
 *.pipe
-# Your specific executables
+# specific executables
 pipe
 scan
 socket_app
