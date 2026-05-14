@@ -25,109 +25,40 @@ void SOCKET::ReleaseStream(){
     streamMutex.unlock();
 }
 bool SOCKET::WriteByte(bit64 _offset, uint8_t byte){
-    if(!binary.is_open()){
-        SOCKET_TAG std::cout<<"Error Binary Writing, File Not in Hand.\n";
-        return 0;
-    }
-    TakeStream();
-    binary.clear();
-    binary.seekp(_offset, std::ios::beg);
-    if (binary.fail()) {
-        SOCKET_TAG std::cout << "Error Binary Writing, Bad seek.\n";
-        ReleaseStream();
-        return 0;
-    }
-    binary.write(reinterpret_cast<const char*>(&byte), 1);
-    if (binary.fail()) {
-        SOCKET_TAG std::cout << "Error Binary Writing, Write failed.\n";
-        ReleaseStream();
-        return 0;
-    }
-    binary.flush();
-    ReleaseStream();
+    map[_offset] = byte;
     return 1;
 }
 bool SOCKET::ReadByte(bit64 _offset, uint8_t& out) {
-    if (!binary.is_open()) {
-        SOCKET_TAG std::cout << "Error Binary Reading, File Not in Hand.\n";
-        return 0;
-    }
-    TakeStream();
-    binary.clear(); 
-    binary.seekg(_offset, std::ios::beg);
-    if (binary.fail()) {
-        SOCKET_TAG std::cout << "Error Binary Reading, Bad seek.\n";
-        ReleaseStream();
-        return 0;
-    }
-    binary.read(reinterpret_cast<char*>(&out), 1);
-    if (binary.fail()) {
-        SOCKET_TAG std::cout << "Error Binary Reading, Read failed.\n";
-        ReleaseStream();
-        return 0;
-    }
-    ReleaseStream();
-    
+    out = map[_offset];
     return 1;
 }
 bool SOCKET::WriteBuffer(bit64 _offset, const char* buffer,size_t size){
-    if(!binary.is_open()){
-        SOCKET_TAG std::cout<<"Error Binary Writing, File Not in Hand.\n";
-        return 0;
-    }
-    TakeStream();
-    binary.clear();
-    binary.seekp(_offset,std::ios::beg);
-    if (binary.fail()) {
-        SOCKET_TAG std::cout << "Error Binary Writing, Bad seek.\n";
-        ReleaseStream();
-        return 0;
-    }
-    binary.write(buffer,size);
-    if (binary.fail()) {
-        SOCKET_TAG std::cout << "Error Binary Writing, Write Failed.\n";
-        ReleaseStream();
-        return 0;
-    }
-    binary.flush();
-    ReleaseStream();
+    memcpy(&map[_offset],buffer,size); 
     return 1;
 }
 bool SOCKET::ReadBuffer(bit64 _offset, char* buffer, size_t size) {
-    if (!binary.is_open()) {
-        SOCKET_TAG std::cout << "Error Binary Reading, File Not in Hand.\n";
-        return 0;
-    }
-    TakeStream();
-    binary.clear();
-    binary.seekg(_offset, std::ios::beg);
-    if (binary.fail()) {
-        SOCKET_TAG std::cout << "Error Binary Reading, Bad seek.\n";
-        ReleaseStream();
-        return 0;
-    }
-    binary.read(buffer, size);
-    if (binary.fail()) {
-        SOCKET_TAG std::cout << "Error Binary Reading, Read Failed.\n";
-        ReleaseStream();
-        return 0;
-    }
-    ReleaseStream();
+    memcpy(buffer, &map[_offset], size);
     return 1;
 }
+
 bool SOCKET::AttachPipe(std::string PipeName){
     if(!fs::exists(PipeName+".pipe")){
         SOCKET_TAG std::cout<<"Cannot open '"<<PipeName<<"' Pipe Not Found!\n";
         return 0;
     }
-    if(binary.is_open()){
-        binary.close();
-    }
-    binary.open(PipeName+".pipe",std::ios::binary | std::ios::out | std::ios::in);
-    if(!binary.is_open()){
-        SOCKET_TAG std::cout<<"Error File Opening! '"<<PipeName<<".pipe'\n";
+    std::string path = PipeName + ".pipe";
+    this->fd = open(path.c_str(), O_RDWR, 0666);
+    // delete all above and add below until byte
+    if(this->fd == -1){
+        std::cout<<"Error Connecting to ("<<PipeName<<") Pipe!\n";
         return 0;
     }
+    this->map = (char*)mmap(NULL, mb * 4, PROT_READ | PROT_WRITE, MAP_SHARED, this->fd, 0);
+    if(this->map == MAP_FAILED){
+        std::cout<<"Error Connecting to ("<<PipeName<<") Pipe!\n";
+        return 0;
+    }
+    // rewrite ReadByte,WriteByte, else and Support mmap Instead of fstream, correct?
     uint8_t byte;
     if(!ReadByte(0,byte)) return 0;
     if(byte != 1){
