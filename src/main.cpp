@@ -1,9 +1,10 @@
+//main.cpp
 #include "pipe.h"
 
 int main() {
     PIPE pipe(PipeName);
+    pipe.Open();
     pipe.init();
-    pipe.open();
     SOCKET* cpp = pipe.Socket("cpp");
     SOCKET* go  = pipe.Socket("go");
     cpp->sockets = &pipe.sockets;

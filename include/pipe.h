@@ -14,6 +14,9 @@
 #include <mutex>
 #include <memory>
 #include <vector>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -36,7 +39,7 @@ class PIPE{
         public: 
         PIPE(std::string filename);   
         bool init();
-        bool open();
+        bool Open();
         bool WriteByte(bit64 _offset,uint8_t byte);
         bool ReadByte(bit64 _offset, uint8_t& out);
         bool WriteBuffer(bit64 _offset, const char* buffer,size_t size);
@@ -51,6 +54,8 @@ class PIPE{
         private:
         bit64 filesize;
         bit64 freeOffset = 0;
+        int fd = -1;
+        char* map = nullptr;
         std::fstream file;
         std::fstream binary;
         std::string existSockets;

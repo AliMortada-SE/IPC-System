@@ -11,6 +11,7 @@
 #include <thread>
 #include <cstring>
 #include <algorithm>
+#include <fcntl.h>
 #include "pipe.h"
 
 
@@ -118,5 +119,4 @@ class SOCKET {
     std::string getName() const { return name; }
     uint64_t getID() const { return id; }
 };
-
 #endif

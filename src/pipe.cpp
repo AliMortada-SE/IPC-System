@@ -1,3 +1,4 @@
+//pipe.cpp
 #include "pipe.h"
 #include "utils.h"
 
@@ -102,41 +103,29 @@ void PIPE::TakeStream(){
 void PIPE::ReleaseStream(){
     streamMutex.unlock();
 }
+
 bool PIPE::init(){
     std::error_code ec;
-    char LOCK = 0;
-    if(!fs::exists(filename)){
-        std::ofstream create(filename,std::ios::binary);
-        TakeStream();
-        binary.open(filename,std::ios::in | std::ios::out | std::ios::binary);
-        if(!binary.is_open()){
-            PIPE_TAG std::cout<<"Error File Opening!\n";
-            return 0;
-        }    
-        binary.seekp(0,std::ios::beg);
-        binary.write(&LOCK,1);
-        binary.close();
-        fs::resize_file(filename,mb*4);
-    }    
-    if(!fs::exists(PIPE::SocketsPath)){
-        file.open("sockets.pipe",std::ios::out);
+    std::fstream file;
+    if(!fs::exists(this->SocketsPath)){
+        file.open(SocketsPath,std::ios::out);
         file.close();
-    }    
-    if(!fs::exists(PIPE::RoomsPath)){
-        file.open("rooms.pipe",std::ios::out);
+    }
+    if(!fs::exists(this->RoomsPath)){
+        file.open(RoomsPath,std::ios::out);
         file.close();
-    }    
-    PIPE::filesize = fs::file_size(filename,ec);
+    }
+    this->filesize = fs::file_size(this->filename,ec);
     if(ec){
         PIPE_TAG std::cout<< ec.message();
         return 0;
     }    
-    PIPE::file.open(PIPE::SocketsPath,std::ios::in);
-    if(PIPE::file.is_open()){
+    file.open(this->SocketsPath,std::ios::in);
+    if(file.is_open()){
         std::string line;
         bit64 _ID;
         bit64 _Offset;
-        while(std::getline(PIPE::file,line)){
+        while(std::getline(file,line)){
             if(line.size()>0){
                 std::unique_ptr<SOCKET> TempSocket = std::make_unique<SOCKET>();
                 _ID = std::stoull(scan.get("ID",line));
@@ -145,33 +134,33 @@ bool PIPE::init(){
                 TempSocket->StartOffset = _Offset;
                 TempSocket->name = scan.get("Name",line);
                 TempSocket->EndOffset = TempSocket->StartOffset + 1024;
-                if(PIPE::freeOffset  < TempSocket->EndOffset){
-                    PIPE::freeOffset = TempSocket->EndOffset;
+                if(this->freeOffset < TempSocket->EndOffset){
+                   this->freeOffset = TempSocket->EndOffset;
                 }
-                PIPE::existSockets +=scan.addValue(TempSocket->name,int64_to_string(TempSocket->id));
-                PIPE::sockets.push_back(std::move(TempSocket));
+               this->existSockets +=scan.addValue(TempSocket->name,int64_to_string(TempSocket->id));
+               this->sockets.push_back(std::move(TempSocket));
             }
         }
     }
-    PIPE::file.close();
+    file.close();
     return 1;
-}    
-bool PIPE::open(){
-    if (binary.is_open()){
-        binary.close();
-    }
-    binary.open(filename,std::ios::out | std::ios:: in | std::ios::binary);
-    if(!binary.is_open()){
+} //updated
+bool PIPE::Open(){
+    this->fd = open(filename.c_str(),O_RDWR | O_CREAT, 0666);
+    if(this->fd == -1){
         std::cout<<"Error Connecting to ("<<PipeName<<") Pipe!\n";
         return 0;
     }
-    binary.clear();
-    binary.seekp(0,std::ios::beg);
-    binary.put(static_cast<char>(1));
-    binary.flush();
+    ftruncate(this->fd,mb * 4);
+    this->map = (char*)mmap(NULL, mb * 4, PROT_READ | PROT_WRITE, MAP_SHARED, this->fd, 0);
+    if(this->map == MAP_FAILED){
+        std::cout<<"Error Connecting to ("<<PipeName<<") Pipe!\n";
+        return 0;
+    }
+    this->map[0] = 1; // Pipe is open
     PIPE_TAG std::cout<<"Pipe "<<filename<<" is Open.\n";
     return 1;
-}
+} //updated
 SOCKET* PIPE::Socket(const std::string name){
     if(scan.Digits(scan.get(name,existSockets))){
         for(int x=0;x<sockets.size();x++){
@@ -189,15 +178,10 @@ SOCKET* PIPE::Socket(const std::string name){
     if(s->StartOffset == 0) s->StartOffset++;
     s->EndOffset = s->StartOffset + kb;
     //s->owner = this;
-    
     freeOffset = s->EndOffset;
     std::string _ID = int64_to_string(s->id);
-    TakeStream();
-    binary.clear();
-    binary.seekp(s->StartOffset,std::ios::beg);
-    binary.write(_ID.data(),_ID.size());
-    binary.flush();
-    ReleaseStream();
+    memcpy(&map[s->StartOffset],_ID.data(),_ID.size()); 
+    std::fstream file;
     file.open(SocketsPath,std::ios::app);
     if(!file.is_open()){
         PIPE_TAG std::cout<<"Error File Openning!\n";
@@ -213,21 +197,18 @@ SOCKET* PIPE::Socket(const std::string name){
     file.close();
     PIPE_TAG std::cout<<"New Socket Created -> "<<name<<".\n";
     return sockets.back().get();
-}
+} //updated
 bool PIPE::RemoveSocket(SOCKET* socket){
     std::string SocketName = socket->name;
-    TakeStream();
-    binary.clear();
-    binary.seekp(socket->StartOffset,std::ios::beg);
+    std::fstream file;
     char buffer[1024] = {0};
-    binary.write(buffer,sizeof(buffer));
-    binary.flush();
-    ReleaseStream();
+    memcpy(&map[socket->StartOffset],buffer,sizeof(buffer)); //replace all below right? 
     std::string NewData;
     for(int x=0; x<sockets.size();x++){
         if(sockets[x]->id == socket->id ){
             sockets.erase(sockets.begin() + x);
-            break;
+            x--;
+            continue;
         }
         NewData += scan.addValue("ID",int64_to_string(sockets[x]->id));
         NewData += scan.addValue("Name",sockets[x]->name);
@@ -243,7 +224,7 @@ bool PIPE::RemoveSocket(SOCKET* socket){
     file.close();
     PIPE_TAG std::cout<<"Socket '"<<SocketName<<"' Deleted.\n";
     return 1;
-}
+} //updated
 SOCKET* PIPE::FindSocket(bit64 _ID, const std::string name) {
     PIPE_TAG std::cout << "Start Searching For Socket.\n";
     if (_ID == 0 && name.empty()) {
